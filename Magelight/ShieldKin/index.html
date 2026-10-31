@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Shield-Kin</title>
+<link rel="stylesheet" href="shieldkin.css">
+</head>
+<body class="theme-vellum">
+<div class="scrim"></div>
+<main class="book" id="book">
+  <header class="book-head">
+    <div class="crest" aria-hidden="true">
+      <svg viewBox="0 0 64 72"><path d="M32 3 L59 13 V35 C59 52 47 63 32 69 C17 63 5 52 5 35 V13 Z"/><path class="crest-inner" d="M32 13 L50 20 V35 C50 47 42 55 32 59 C22 55 14 47 14 35 V20 Z"/><path class="crest-mark" d="M24 26 H40 M32 22 V50 M25 40 L32 47 L39 40"/></svg>
+    </div>
+    <div class="title">
+      <h1>Shield-Kin</h1>
+      <p class="sub">The sworn of your hearth and road</p>
+    </div>
+    <nav class="tabs" role="tablist">
+      <button class="tab" data-view="roster" aria-selected="true">Roster</button>
+      <button class="tab" data-view="registry" aria-selected="false">Registry <span class="count" id="count-registry">0</span></button>
+      <button class="tab" data-view="settings" aria-selected="false">Settings</button>
+    </nav>
+    <div class="capacity"><b id="cap-count">0</b><span id="cap-max">/ 30</span><em>sworn</em></div>
+    <button class="close" id="btn-close" title="Close (Esc)">&#x2715;</button>
+  </header>
+
+  <section class="view view-roster" id="view-roster">
+    <div class="party-bar">
+      <span class="label">Whole party</span>
+      <button data-party="follow">Follow me</button>
+      <button data-party="wait">Wait here</button>
+      <button data-party="sandbox">Relax nearby</button>
+      <button data-party="summon">Summon all</button>
+      <button data-party="camp">Make camp</button>
+      <button data-party="breakcamp">Break camp</button>
+    </div>
+    <div class="split">
+      <aside class="roster" id="roster"></aside>
+      <article class="page" id="page"></article>
+    </div>
+  </section>
+
+  <section class="view view-registry" id="view-registry" hidden>
+    <p class="lede">Followers you dismissed. They keep their settings and come back as they were.</p>
+    <div class="cards" id="registry"></div>
+  </section>
+
+  <section class="view view-settings" id="view-settings" hidden>
+    <div class="settings" id="settings"></div>
+  </section>
+
+  <footer class="book-foot">
+    <span id="foot-hint">Esc or <kbd id="foot-key">F7</kbd> to close</span>
+    <span class="toast" id="toast"></span>
+  </footer>
+</main>
+<script src="shieldkin.js"></script>
+</body>
+</html>

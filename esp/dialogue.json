@@ -1,0 +1,663 @@
+[
+ {
+  "record_type": "DialogBranch",
+  "editorid": "SHK_BranchOrders",
+  "ops": [
+   {
+    "field_path": "Quest",
+    "value": "000811:Shield-Kin.esp"
+   },
+   {
+    "field_path": "Flags",
+    "value": "TopLevel"
+   }
+  ]
+ },
+ {
+  "record_type": "DialogTopic",
+  "editorid": "SHK_TopicOrders",
+  "ops": [
+   {
+    "field_path": "Name",
+    "value": "Let's go over your orders."
+   },
+   {
+    "field_path": "Quest",
+    "value": "000811:Shield-Kin.esp"
+   },
+   {
+    "field_path": "Branch",
+    "value": "@SHK_BranchOrders"
+   },
+   {
+    "field_path": "Category",
+    "value": "Topic"
+   },
+   {
+    "field_path": "Subtype",
+    "value": "Custom"
+   },
+   {
+    "field_path": "Priority",
+    "value": "50"
+   }
+  ]
+ },
+ {
+  "record_type": "DialogResponses",
+  "editorid": "SHK_InfoOrders",
+  "parent": "SHK_TopicOrders",
+  "ops": [
+   {
+    "field_path": "Responses",
+    "op": "Add",
+    "compose": {
+     "type": "DialogResponse",
+     "fields": {
+      "Text": "Of course.",
+      "ResponseNumber": "1",
+      "Emotion": "Neutral"
+     }
+    }
+   },
+   {
+    "field_path": "Conditions",
+    "op": "Add",
+    "compose": {
+     "type": "ConditionFloat",
+     "fields": {
+      "CompareOperator": "EqualTo",
+      "ComparisonValue": "1"
+     },
+     "sets": [
+      {
+       "path": "Data",
+       "compose": {
+        "type": "GetInFactionConditionData",
+        "fields": {
+         "RunOnType": "Subject",
+         "Faction": "000804:Shield-Kin.esp"
+        }
+       }
+      }
+     ]
+    }
+   },
+   {
+    "field_path": "VirtualMachineAdapter",
+    "compose": {
+     "type": "DialogResponsesAdapter",
+     "fields": {
+      "Version": "5",
+      "ObjectFormat": "2"
+     },
+     "sets": [
+      {
+       "path": "Scripts",
+       "verb": "Add",
+       "compose": {
+        "type": "ScriptEntry",
+        "fields": {
+         "Name": "SHK_TIF",
+         "Flags": "Local"
+        }
+       }
+      },
+      {
+       "path": "ScriptFragments.FileName",
+       "value": "SHK_TIF"
+      },
+      {
+       "path": "ScriptFragments.OnEnd",
+       "compose": {
+        "type": "ScriptFragment",
+        "fields": {
+         "ScriptName": "SHK_TIF",
+         "FragmentName": "Fragment_Orders"
+        }
+       }
+      }
+     ]
+    }
+   }
+  ]
+ },
+ {
+  "record_type": "DialogBranch",
+  "editorid": "SHK_BranchWait",
+  "ops": [
+   {
+    "field_path": "Quest",
+    "value": "000811:Shield-Kin.esp"
+   },
+   {
+    "field_path": "Flags",
+    "value": "TopLevel"
+   }
+  ]
+ },
+ {
+  "record_type": "DialogTopic",
+  "editorid": "SHK_TopicWait",
+  "ops": [
+   {
+    "field_path": "Name",
+    "value": "Wait here."
+   },
+   {
+    "field_path": "Quest",
+    "value": "000811:Shield-Kin.esp"
+   },
+   {
+    "field_path": "Branch",
+    "value": "@SHK_BranchWait"
+   },
+   {
+    "field_path": "Category",
+    "value": "Topic"
+   },
+   {
+    "field_path": "Subtype",
+    "value": "Custom"
+   },
+   {
+    "field_path": "Priority",
+    "value": "50"
+   }
+  ]
+ },
+ {
+  "record_type": "DialogResponses",
+  "editorid": "SHK_InfoWait",
+  "parent": "SHK_TopicWait",
+  "ops": [
+   {
+    "field_path": "Responses",
+    "op": "Add",
+    "compose": {
+     "type": "DialogResponse",
+     "fields": {
+      "Text": "I'll wait.",
+      "ResponseNumber": "1",
+      "Emotion": "Neutral"
+     }
+    }
+   },
+   {
+    "field_path": "Conditions",
+    "op": "Add",
+    "compose": {
+     "type": "ConditionFloat",
+     "fields": {
+      "CompareOperator": "EqualTo",
+      "ComparisonValue": "1"
+     },
+     "sets": [
+      {
+       "path": "Data",
+       "compose": {
+        "type": "GetInFactionConditionData",
+        "fields": {
+         "RunOnType": "Subject",
+         "Faction": "000804:Shield-Kin.esp"
+        }
+       }
+      }
+     ]
+    }
+   },
+   {
+    "field_path": "Conditions",
+    "op": "Add",
+    "compose": {
+     "type": "ConditionFloat",
+     "fields": {
+      "CompareOperator": "NotEqualTo",
+      "ComparisonValue": "1"
+     },
+     "sets": [
+      {
+       "path": "Data",
+       "compose": {
+        "type": "GetFactionRankConditionData",
+        "fields": {
+         "RunOnType": "Subject",
+         "Faction": "000805:Shield-Kin.esp"
+        }
+       }
+      }
+     ]
+    }
+   },
+   {
+    "field_path": "VirtualMachineAdapter",
+    "compose": {
+     "type": "DialogResponsesAdapter",
+     "fields": {
+      "Version": "5",
+      "ObjectFormat": "2"
+     },
+     "sets": [
+      {
+       "path": "Scripts",
+       "verb": "Add",
+       "compose": {
+        "type": "ScriptEntry",
+        "fields": {
+         "Name": "SHK_TIF",
+         "Flags": "Local"
+        }
+       }
+      },
+      {
+       "path": "ScriptFragments.FileName",
+       "value": "SHK_TIF"
+      },
+      {
+       "path": "ScriptFragments.OnEnd",
+       "compose": {
+        "type": "ScriptFragment",
+        "fields": {
+         "ScriptName": "SHK_TIF",
+         "FragmentName": "Fragment_Wait"
+        }
+       }
+      }
+     ]
+    }
+   }
+  ]
+ },
+ {
+  "record_type": "DialogBranch",
+  "editorid": "SHK_BranchFollow",
+  "ops": [
+   {
+    "field_path": "Quest",
+    "value": "000811:Shield-Kin.esp"
+   },
+   {
+    "field_path": "Flags",
+    "value": "TopLevel"
+   }
+  ]
+ },
+ {
+  "record_type": "DialogTopic",
+  "editorid": "SHK_TopicFollow",
+  "ops": [
+   {
+    "field_path": "Name",
+    "value": "Follow me."
+   },
+   {
+    "field_path": "Quest",
+    "value": "000811:Shield-Kin.esp"
+   },
+   {
+    "field_path": "Branch",
+    "value": "@SHK_BranchFollow"
+   },
+   {
+    "field_path": "Category",
+    "value": "Topic"
+   },
+   {
+    "field_path": "Subtype",
+    "value": "Custom"
+   },
+   {
+    "field_path": "Priority",
+    "value": "50"
+   }
+  ]
+ },
+ {
+  "record_type": "DialogResponses",
+  "editorid": "SHK_InfoFollow",
+  "parent": "SHK_TopicFollow",
+  "ops": [
+   {
+    "field_path": "Responses",
+    "op": "Add",
+    "compose": {
+     "type": "DialogResponse",
+     "fields": {
+      "Text": "Lead the way.",
+      "ResponseNumber": "1",
+      "Emotion": "Neutral"
+     }
+    }
+   },
+   {
+    "field_path": "Conditions",
+    "op": "Add",
+    "compose": {
+     "type": "ConditionFloat",
+     "fields": {
+      "CompareOperator": "EqualTo",
+      "ComparisonValue": "1"
+     },
+     "sets": [
+      {
+       "path": "Data",
+       "compose": {
+        "type": "GetInFactionConditionData",
+        "fields": {
+         "RunOnType": "Subject",
+         "Faction": "000804:Shield-Kin.esp"
+        }
+       }
+      }
+     ]
+    }
+   },
+   {
+    "field_path": "Conditions",
+    "op": "Add",
+    "compose": {
+     "type": "ConditionFloat",
+     "fields": {
+      "CompareOperator": "EqualTo",
+      "ComparisonValue": "1"
+     },
+     "sets": [
+      {
+       "path": "Data",
+       "compose": {
+        "type": "GetFactionRankConditionData",
+        "fields": {
+         "RunOnType": "Subject",
+         "Faction": "000805:Shield-Kin.esp"
+        }
+       }
+      }
+     ]
+    }
+   },
+   {
+    "field_path": "VirtualMachineAdapter",
+    "compose": {
+     "type": "DialogResponsesAdapter",
+     "fields": {
+      "Version": "5",
+      "ObjectFormat": "2"
+     },
+     "sets": [
+      {
+       "path": "Scripts",
+       "verb": "Add",
+       "compose": {
+        "type": "ScriptEntry",
+        "fields": {
+         "Name": "SHK_TIF",
+         "Flags": "Local"
+        }
+       }
+      },
+      {
+       "path": "ScriptFragments.FileName",
+       "value": "SHK_TIF"
+      },
+      {
+       "path": "ScriptFragments.OnEnd",
+       "compose": {
+        "type": "ScriptFragment",
+        "fields": {
+         "ScriptName": "SHK_TIF",
+         "FragmentName": "Fragment_Follow"
+        }
+       }
+      }
+     ]
+    }
+   }
+  ]
+ },
+ {
+  "record_type": "DialogBranch",
+  "editorid": "SHK_BranchTrade",
+  "ops": [
+   {
+    "field_path": "Quest",
+    "value": "000811:Shield-Kin.esp"
+   },
+   {
+    "field_path": "Flags",
+    "value": "TopLevel"
+   }
+  ]
+ },
+ {
+  "record_type": "DialogTopic",
+  "editorid": "SHK_TopicTrade",
+  "ops": [
+   {
+    "field_path": "Name",
+    "value": "Let's trade gear."
+   },
+   {
+    "field_path": "Quest",
+    "value": "000811:Shield-Kin.esp"
+   },
+   {
+    "field_path": "Branch",
+    "value": "@SHK_BranchTrade"
+   },
+   {
+    "field_path": "Category",
+    "value": "Topic"
+   },
+   {
+    "field_path": "Subtype",
+    "value": "Custom"
+   },
+   {
+    "field_path": "Priority",
+    "value": "50"
+   }
+  ]
+ },
+ {
+  "record_type": "DialogResponses",
+  "editorid": "SHK_InfoTrade",
+  "parent": "SHK_TopicTrade",
+  "ops": [
+   {
+    "field_path": "Responses",
+    "op": "Add",
+    "compose": {
+     "type": "DialogResponse",
+     "fields": {
+      "Text": "Here's what I'm carrying.",
+      "ResponseNumber": "1",
+      "Emotion": "Neutral"
+     }
+    }
+   },
+   {
+    "field_path": "Conditions",
+    "op": "Add",
+    "compose": {
+     "type": "ConditionFloat",
+     "fields": {
+      "CompareOperator": "EqualTo",
+      "ComparisonValue": "1"
+     },
+     "sets": [
+      {
+       "path": "Data",
+       "compose": {
+        "type": "GetInFactionConditionData",
+        "fields": {
+         "RunOnType": "Subject",
+         "Faction": "000804:Shield-Kin.esp"
+        }
+       }
+      }
+     ]
+    }
+   },
+   {
+    "field_path": "VirtualMachineAdapter",
+    "compose": {
+     "type": "DialogResponsesAdapter",
+     "fields": {
+      "Version": "5",
+      "ObjectFormat": "2"
+     },
+     "sets": [
+      {
+       "path": "Scripts",
+       "verb": "Add",
+       "compose": {
+        "type": "ScriptEntry",
+        "fields": {
+         "Name": "SHK_TIF",
+         "Flags": "Local"
+        }
+       }
+      },
+      {
+       "path": "ScriptFragments.FileName",
+       "value": "SHK_TIF"
+      },
+      {
+       "path": "ScriptFragments.OnEnd",
+       "compose": {
+        "type": "ScriptFragment",
+        "fields": {
+         "ScriptName": "SHK_TIF",
+         "FragmentName": "Fragment_Trade"
+        }
+       }
+      }
+     ]
+    }
+   }
+  ]
+ },
+ {
+  "record_type": "DialogBranch",
+  "editorid": "SHK_BranchDismiss",
+  "ops": [
+   {
+    "field_path": "Quest",
+    "value": "000811:Shield-Kin.esp"
+   },
+   {
+    "field_path": "Flags",
+    "value": "TopLevel"
+   }
+  ]
+ },
+ {
+  "record_type": "DialogTopic",
+  "editorid": "SHK_TopicDismiss",
+  "ops": [
+   {
+    "field_path": "Name",
+    "value": "We should part ways for now."
+   },
+   {
+    "field_path": "Quest",
+    "value": "000811:Shield-Kin.esp"
+   },
+   {
+    "field_path": "Branch",
+    "value": "@SHK_BranchDismiss"
+   },
+   {
+    "field_path": "Category",
+    "value": "Topic"
+   },
+   {
+    "field_path": "Subtype",
+    "value": "Custom"
+   },
+   {
+    "field_path": "Priority",
+    "value": "50"
+   }
+  ]
+ },
+ {
+  "record_type": "DialogResponses",
+  "editorid": "SHK_InfoDismiss",
+  "parent": "SHK_TopicDismiss",
+  "ops": [
+   {
+    "field_path": "Responses",
+    "op": "Add",
+    "compose": {
+     "type": "DialogResponse",
+     "fields": {
+      "Text": "Until next time.",
+      "ResponseNumber": "1",
+      "Emotion": "Neutral"
+     }
+    }
+   },
+   {
+    "field_path": "Conditions",
+    "op": "Add",
+    "compose": {
+     "type": "ConditionFloat",
+     "fields": {
+      "CompareOperator": "EqualTo",
+      "ComparisonValue": "1"
+     },
+     "sets": [
+      {
+       "path": "Data",
+       "compose": {
+        "type": "GetInFactionConditionData",
+        "fields": {
+         "RunOnType": "Subject",
+         "Faction": "000804:Shield-Kin.esp"
+        }
+       }
+      }
+     ]
+    }
+   },
+   {
+    "field_path": "VirtualMachineAdapter",
+    "compose": {
+     "type": "DialogResponsesAdapter",
+     "fields": {
+      "Version": "5",
+      "ObjectFormat": "2"
+     },
+     "sets": [
+      {
+       "path": "Scripts",
+       "verb": "Add",
+       "compose": {
+        "type": "ScriptEntry",
+        "fields": {
+         "Name": "SHK_TIF",
+         "Flags": "Local"
+        }
+       }
+      },
+      {
+       "path": "ScriptFragments.FileName",
+       "value": "SHK_TIF"
+      },
+      {
+       "path": "ScriptFragments.OnEnd",
+       "compose": {
+        "type": "ScriptFragment",
+        "fields": {
+         "ScriptName": "SHK_TIF",
+         "FragmentName": "Fragment_Dismiss"
+        }
+       }
+      }
+     ]
+    }
+   }
+  ]
+ }
+]
