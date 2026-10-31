@@ -83,6 +83,7 @@ Spell Property FastHealing Auto Hidden
 Spell Property Healing Auto Hidden
 
 Actor Property PlayerRef Auto Hidden
+Spell Property MenuPower Auto Hidden
 
 ; ---------------------------------------------------------------------------
 ; Runtime state
@@ -92,6 +93,7 @@ int menuView = 0
 int boundKey = 0
 bool menuOpen = false
 bool domReady = false
+int menuAck = 0
 Actor pendingFocus = None
 bool pendingOpen = false
 int lastPlayerLevel = 0
@@ -128,6 +130,7 @@ Function Startup()
 		StorageUtil.SetStringValue(None, "shk.set.theme", "vellum")
 	endif
 	BindMenuKey(StorageUtil.GetIntValue(None, "shk.set.key", 65))
+	UpdatePower()
 	SetupMenu()
 	; keep vanilla "Follow me" dialogue available for every potential follower
 	if PlayerFollowerCount && PlayerFollowerCount.GetValue() > 0
@@ -139,6 +142,7 @@ Function Startup()
 EndFunction
 
 Function LoadForms()
+	MenuPower = Game.GetFormFromFile(0x822, PluginName) as Spell
 	LinkHome = Game.GetFormFromFile(0x800, PluginName) as Keyword
 	LinkCamp = Game.GetFormFromFile(0x801, PluginName) as Keyword
 	LinkRelax = Game.GetFormFromFile(0x802, PluginName) as Keyword
@@ -195,6 +199,19 @@ Event OnUpdate()
 EndEvent
 
 ; Re-apply settings the game does not keep in the save (base-form changes, linked refs).
+; The "Shield-Kin" lesser power opens the menu; the Settings page can take it away.
+Function UpdatePower()
+	if !MenuPower
+		return
+	endif
+	bool want = StorageUtil.GetIntValue(None, "shk.set.power", 1) == 1
+	if want && !PlayerRef.HasSpell(MenuPower)
+		PlayerRef.AddSpell(MenuPower, false)
+	elseif !want && PlayerRef.HasSpell(MenuPower)
+		PlayerRef.RemoveSpell(MenuPower)
+	endif
+EndFunction
+
 Function ReapplyAll()
 	int i = 0
 	while i < MaxSlots
@@ -684,6 +701,32 @@ Function TakeOverOutfit(Actor a)
 	StorageUtil.SetIntValue(a, "shk.outfit.managed", 1)
 EndFunction
 
+; Puts on armour the player handed over, instead of the game's choice by armour rating.
+; The follower's base outfit is swapped for an empty one so it cannot come back.
+Function WearGiven(Actor a)
+	int n = StorageUtil.FormListCount(a, "shk.given")
+	if n <= 0
+		return
+	endif
+	Form[] given = StorageUtil.FormListToArray(a, "shk.given")
+	StorageUtil.FormListClear(a, "shk.given")
+	TakeOverOutfit(a)
+	int i = 0
+	while i < given.Length
+		Armor item = given[i] as Armor
+		if item && a.GetItemCount(item) > 0 && item.IsPlayable()
+			a.EquipItem(item, false, true)
+		endif
+		i += 1
+	endwhile
+	; keep the new look from being swapped out by place-based outfits until a set is saved for it
+	int cur = StorageUtil.GetIntValue(a, "shk.outfit.current", -1)
+	if cur >= 0 && HasOutfit(a, cur)
+		Utility.Wait(0.5)
+		SaveOutfit(a, cur)
+	endif
+EndFunction
+
 Function WearOutfit(Actor a, int setIndex)
 	if !HasOutfit(a, setIndex)
 		return
@@ -875,9 +918,14 @@ Actor Function FindMerchantNear(Actor a)
 	int i = 0
 	while i < nearby.Length
 		Actor m = nearby[i]
-		if m && m != a && m != PlayerRef && !m.IsDead() && !m.IsInFaction(FollowerFaction) && !m.IsHostileToActor(PlayerRef)
+		if m && m != a && m != PlayerRef && IsMerchantCandidate(m)
 			Faction vf = PO3_SKSEFunctions.GetVendorFaction(m)
+			ObjectReference chest = None
 			if vf
+				chest = vf.GetMerchantContainer()
+			endif
+			; a real shopkeeper has a merchant chest with gold in it
+			if chest && chest.GetItemCount(Gold) > 0
 				float d = m.GetDistance(a)
 				if d < bestDist
 					bestDist = d
@@ -888,6 +936,17 @@ Actor Function FindMerchantNear(Actor a)
 		i += 1
 	endwhile
 	return best
+EndFunction
+
+; Not anyone travelling with the player, whatever framework they belong to.
+bool Function IsMerchantCandidate(Actor m)
+	if m.IsDead() || m.IsPlayerTeammate() || m.IsHostileToActor(PlayerRef) || m.IsInCombat()
+		return false
+	endif
+	if m.IsInFaction(FollowerFaction) || m.IsInFaction(CurrentFollowerFaction) || m.IsInFaction(CurrentHireling)
+		return false
+	endif
+	return m.Is3DLoaded()
 EndFunction
 
 Function StartSell(Actor a)
@@ -1130,37 +1189,52 @@ Event OnMenuCommand(string eventName, string strArg, float numArg, Form sender)
 	if p.Length == 0
 		return
 	endif
+	; the page appends a sequence number; the state echoes it back as "ack"
+	int n = p.Length
+	if n >= 2
+		menuAck = p[n - 1] as int
+		n -= 1
+	endif
 	string kind = p[0]
 	Actor focus = None
+	bool push = true
 	if kind == "close"
 		CloseMenu()
 		return
 	elseif kind == "refresh"
-	elseif kind == "f" && p.Length >= 3
+	elseif kind == "f" && n >= 3
 		focus = Game.GetForm(p[1] as int) as Actor
 		string arg = ""
-		if p.Length >= 4
+		if n >= 4
 			arg = p[3]
 		endif
 		if focus
 			if !FollowerCommand(focus, p[2], arg)
 				return
 			endif
+			; the page already shows these; rebuilding the state while paused is slow
+			push = !IsQuickVerb(p[2]) || (p[2] == "mode" && (arg as int) == ModeHome)
 		endif
-	elseif kind == "p" && p.Length >= 2
+	elseif kind == "p" && n >= 2
 		PartyCommand(p[1])
-	elseif kind == "r" && p.Length >= 3
+		push = !(p[1] == "follow" || p[1] == "wait" || p[1] == "sandbox")
+	elseif kind == "r" && n >= 3
 		Actor r = Game.GetForm(p[1] as int) as Actor
 		if r
 			RegistryCommand(r, p[2])
 		endif
-	elseif kind == "s" && p.Length >= 3
+	elseif kind == "s" && n >= 3
 		SettingCommand(p[1], p[2])
+		push = false
 	endif
-	if menuOpen
+	if menuOpen && push
 		PushState(focus)
 	endif
 EndEvent
+
+bool Function IsQuickVerb(string verb)
+	return verb == "mode" || verb == "dist" || verb == "style" || verb == "stance" || verb == "prot" || verb == "outfitauto"
+EndFunction
 
 ; Returns false when the command closed the menu.
 bool Function FollowerCommand(Actor a, string verb, string arg)
@@ -1262,6 +1336,9 @@ Function SettingCommand(string k, string v)
 		StorageUtil.SetFloatValue(None, "shk.set.scale", v as float)
 	elseif k == "theme"
 		StorageUtil.SetStringValue(None, "shk.set.theme", v)
+	elseif k == "power"
+		StorageUtil.SetIntValue(None, "shk.set.power", v as int)
+		UpdatePower()
 	endif
 EndFunction
 
@@ -1292,7 +1369,7 @@ string Function NumI(string k, int v)
 EndFunction
 
 string Function BuildState(Actor focus)
-	string s = "{\"v\":1"
+	string s = "{\"v\":1," + NumI("ack", menuAck)
 	if focus
 		s += "," + NumI("focus", focus.GetFormID())
 	else
@@ -1307,6 +1384,7 @@ string Function BuildState(Actor focus)
 	s += "," + Num("autooutfit", StorageUtil.GetIntValue(None, "shk.set.autooutfit", 1))
 	s += "," + Num("dist", StorageUtil.GetIntValue(None, "shk.set.dist", 1))
 	s += "," + Num("scale", StorageUtil.GetFloatValue(None, "shk.set.scale", 100.0))
+	s += "," + Num("power", StorageUtil.GetIntValue(None, "shk.set.power", 1))
 	s += "," + Str("theme", StorageUtil.GetStringValue(None, "shk.set.theme", "vellum")) + "}"
 
 	s += ",\"followers\":["

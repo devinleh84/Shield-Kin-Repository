@@ -179,22 +179,36 @@ Function BeginCollecting()
 EndFunction
 
 Event OnMenuClose(string menuName)
-	if menuName == "ContainerMenu" && collecting
+	if menuName != "ContainerMenu"
+		return
+	endif
+	UnregisterForMenu("ContainerMenu")
+	Actor a = GetActorRef()
+	if !a
 		collecting = false
-		UnregisterForMenu("ContainerMenu")
-		Actor a = GetActorRef()
-		if a
-			int n = Core().SellQueueCount(a)
-			if n > 0
-				Debug.Notification(a.GetDisplayName() + " is carrying " + n + " items to sell.")
-			endif
+		return
+	endif
+	if collecting
+		collecting = false
+		int n = Core().SellQueueCount(a)
+		if n > 0
+			Debug.Notification(a.GetDisplayName() + " is carrying " + n + " items to sell.")
 		endif
+	else
+		Core().WearGiven(a)
 	endif
 EndEvent
 
 Event OnItemAdded(Form akBaseItem, int aiItemCount, ObjectReference akItemReference, ObjectReference akSourceContainer)
-	if collecting && akSourceContainer == Core().PlayerRef
+	if akSourceContainer != Core().PlayerRef
+		return
+	endif
+	if collecting
 		Core().QueueForSale(GetActorRef(), akBaseItem, aiItemCount)
+	elseif akBaseItem as Armor
+		; armour handed over in a trade is worn when the trade window closes
+		StorageUtil.FormListAdd(GetActorRef(), "shk.given", akBaseItem, false)
+		RegisterForMenu("ContainerMenu")
 	endif
 EndEvent
 

@@ -104,9 +104,45 @@
     });
   }
 
+  // Simple changes show at once instead of waiting for Papyrus, which is slow while the
+  // game is paused. Each command carries a number; the state echoes the last one handled
+  // as "ack", so a state built before a change cannot undo it on screen.
+  var seq = 0;
+  var pending = [];
+
   function send(cmd) {
-    if (typeof window.shk === 'function') window.shk(cmd);
+    seq += 1;
+    if (predict(cmd)) {
+      pending.push({ seq: seq, cmd: cmd });
+      render();
+    }
+    if (typeof window.shk === 'function') window.shk(cmd + '|' + seq);
     else mock(cmd);
+  }
+
+  var QUICK = ['mode', 'dist', 'style', 'stance', 'prot', 'outfitauto'];
+  var PARTY = { follow: 0, wait: 1, sandbox: 2, breakcamp: 0 };
+
+  // Applies a command to the local state when its result is known in advance.
+  function predict(cmd) {
+    if (!S) return false;
+    var p = cmd.split('|');
+    if (p[0] === 's') {
+      S.settings[p[1]] = p[1] === 'theme' ? p[2] : Number(p[2]);
+      return true;
+    }
+    if (p[0] === 'f' && QUICK.indexOf(p[2]) >= 0) {
+      var f = find(Number(p[1]));
+      if (!f) return false;
+      if (p[2] === 'mode' && f.mode === 6) f.merchant = '';
+      f[p[2]] = Number(p[3]);
+      return true;
+    }
+    if (p[0] === 'p' && PARTY[p[1]] != null) {
+      S.followers.forEach(function (f) { f.mode = PARTY[p[1]]; f.merchant = ''; });
+      return true;
+    }
+    return false;
   }
 
   var toastTimer = 0;
@@ -137,6 +173,9 @@
     S.others = S.others || [];
     S.registry = S.registry || [];
     S.settings = S.settings || {};
+    var ack = S.ack || 0;
+    pending = pending.filter(function (x) { return x.seq > ack; });
+    pending.forEach(function (x) { predict(x.cmd); });
     if (S.focus) {
       selId = S.focus;
       view = 'roster';
@@ -354,6 +393,8 @@
         stepper('levelpct', st.levelpct, 5, 50, 100, function (v) { return v + '%'; }));
     }
     h += row('Automatic outfits', 'Default for new followers: change saved outfits by place.', toggle('autooutfit', st.autooutfit));
+    h += row('Lesser power', 'Gives you the "Shield-Kin" power, which opens this menu. Aim at a follower to open their page.',
+      toggle('power', st.power !== 0));
     h += row('Notifications', 'Short messages in the corner of the screen.', toggle('notify', st.notify));
     h += row('Menu size', 'Scale of this window.',
       stepper('scale', st.scale, 5, 70, 130, function (v) { return v + '%'; }));
@@ -427,13 +468,14 @@
     if (!S) return;
     var p = cmd.split('|');
     if (p[0] === 'close') { toast('(preview) close'); return; }
+    S.ack = seq;
     if (p[0] === 's') {
-      S.settings[p[1]] = p[1] === 'theme' ? p[2] : Number(p[2]);
+      // predicted
     } else if (p[0] === 'f') {
       var f = find(Number(p[1]));
       var n = Number(p[3]);
       if (!f) return;
-      if (['mode', 'dist', 'style', 'stance', 'prot', 'outfitauto'].indexOf(p[2]) >= 0) f[p[2]] = n;
+      if (QUICK.indexOf(p[2]) >= 0) { /* predicted */ }
       else if (p[2] === 'sethome') f.home = 'Breezehome';
       else if (p[2] === 'clearhome') f.home = '';
       else if (p[2] === 'outfitsave') f.outfits[n] = 4;
@@ -457,7 +499,7 @@
   if (typeof window.shk !== 'function') {
     window.shkState({
       v: 1, focus: 0, max: 30,
-      settings: { key: 65, catchup: 3000, level: 0, levelpct: 90, notify: 1, autooutfit: 1, dist: 1, scale: 100, theme: 'vellum' },
+      settings: { key: 65, catchup: 3000, level: 0, levelpct: 90, notify: 1, autooutfit: 1, dist: 1, scale: 100, theme: 'vellum', power: 1 },
       followers: [
         { id: 1, name: 'Lydia', race: 'Nord', cls: 'Warrior', lvl: 18, hp: 82, mp: 40, sp: 65, mode: 0, dist: 1, style: 5, stance: 0, prot: 2, away: 210, combat: 0, home: 'Breezehome', outfitauto: 1, outfitnow: 0, outfits: [5, 3, 0, 2, 0], sell: 0, bonus: 0 },
         { id: 2, name: 'Marcurio', race: 'Imperial', cls: 'Mage', lvl: 16, hp: 100, mp: 72, sp: 90, mode: 1, dist: 2, style: 3, stance: 2, prot: 1, away: 3400, combat: 0, home: '', outfitauto: 0, outfitnow: -1, outfits: [0, 0, 0, 0, 0], sell: 6, bonus: 0 },
