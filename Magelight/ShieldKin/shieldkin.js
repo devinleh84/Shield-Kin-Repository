@@ -174,6 +174,7 @@
     S.registry = S.registry || [];
     S.settings = S.settings || {};
     var ack = S.ack || 0;
+    if (seq < ack) seq = ack; // the page was reloaded; keep numbering after the game's
     pending = pending.filter(function (x) { return x.seq > ack; });
     pending.forEach(function (x) { predict(x.cmd); });
     if (S.focus) {
@@ -184,10 +185,28 @@
     render();
   };
 
+  // Papyrus may hand strings back in a different case, so compare in lower case.
+  function themeOf(st) {
+    return String(st.theme || '').toLowerCase() === 'paper' ? 'paper' : 'vellum';
+  }
+
+  // After a settings change the game sends back just the saved settings.
+  window.shkSettings = function (json) {
+    if (!S) return;
+    var d;
+    try { d = typeof json === 'string' ? JSON.parse(json) : json; } catch (e) { return; }
+    var ack = d.ack || 0;
+    S.settings = d.settings || S.settings;
+    S.ack = ack;
+    pending = pending.filter(function (x) { return x.seq > ack; });
+    pending.forEach(function (x) { predict(x.cmd); });
+    render();
+  };
+
   function render() {
     if (!S) return;
     var st = S.settings;
-    document.body.className = 'theme-' + (st.theme === 'paper' ? 'paper' : 'vellum');
+    document.body.className = 'theme-' + themeOf(st);
     $('book').style.setProperty('--scale', (st.scale || 100) / 100);
     $('cap-count').textContent = S.followers.length;
     $('cap-max').textContent = '/ ' + S.max;
@@ -399,8 +418,8 @@
     h += row('Menu size', 'Scale of this window.',
       stepper('scale', st.scale, 5, 70, 130, function (v) { return v + '%'; }));
     h += row('Theme', 'Look of this menu.',
-      '<div class="choices"><button class="choice' + (st.theme !== 'paper' ? ' on' : '') +
-      '" data-cmd="s|theme|vellum">Dark Vellum</button><button class="choice' + (st.theme === 'paper' ? ' on' : '') +
+      '<div class="choices"><button class="choice' + (themeOf(st) !== 'paper' ? ' on' : '') +
+      '" data-cmd="s|theme|vellum">Dark Vellum</button><button class="choice' + (themeOf(st) === 'paper' ? ' on' : '') +
       '" data-cmd="s|theme|paper">Ink on Paper</button></div>');
     $('settings').innerHTML = h;
   }
@@ -496,7 +515,13 @@
     window.shkState(S);
   }
 
-  if (typeof window.shk !== 'function') {
+  // Sample data only in a plain browser. In the game the page can load before Magelight
+  // adds window.shk, so wait a moment and never show samples once real state has come in.
+  function previewIfStandalone() {
+    if (S || typeof window.shk === 'function') {
+      if (!S) send('refresh');
+      return;
+    }
     window.shkState({
       v: 1, focus: 0, max: 30,
       settings: { key: 65, catchup: 3000, level: 0, levelpct: 90, notify: 1, autooutfit: 1, dist: 1, scale: 100, theme: 'vellum', power: 1 },
@@ -508,7 +533,7 @@
       others: [{ id: 9, name: 'Meeko', race: 'Dog', lvl: 5, hp: 100 }],
       registry: [{ id: 4, name: 'Uthgerd the Unbroken', race: 'Nord', lvl: 20, home: 'Jorrvaskr' }]
     });
-  } else {
-    send('refresh');
   }
+  if (typeof window.shk === 'function') send('refresh');
+  else setTimeout(previewIfStandalone, 1500);
 })();

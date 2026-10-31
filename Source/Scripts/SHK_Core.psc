@@ -1243,8 +1243,8 @@ Function OpenMenu(Actor focus = None)
 		return
 	endif
 	menuOpen = true
-	PushState(focus)
 	Magelight.ShowView(menuView, true)
+	PushState(focus)
 	if !Magelight.RequestUIMode(menuView, true)
 		menuOpen = false
 		Magelight.ShowView(menuView, false)
@@ -1330,6 +1330,8 @@ Event OnMenuCommand(string eventName, string strArg, float numArg, Form sender)
 		endif
 	elseif kind == "s" && n >= 3
 		SettingCommand(p[1], p[2])
+		; settings alone are cheap to send back, and keep the page in step with what was saved
+		Magelight.Call(menuView, "shkSettings", "{" + NumI("ack", menuAck) + "," + SettingsJson() + "}")
 		push = false
 	endif
 	if menuOpen && push
@@ -1473,15 +1475,8 @@ string Function NumI(string k, int v)
 	return "\"" + k + "\":" + v
 EndFunction
 
-string Function BuildState(Actor focus)
-	string s = "{\"v\":1," + NumI("ack", menuAck)
-	if focus
-		s += "," + NumI("focus", focus.GetFormID())
-	else
-		s += ",\"focus\":0"
-	endif
-	s += ",\"max\":" + MaxSlots
-	s += ",\"settings\":{" + Num("key", StorageUtil.GetIntValue(None, "shk.set.key", 65))
+string Function SettingsJson()
+	string s = "\"settings\":{" + Num("key", StorageUtil.GetIntValue(None, "shk.set.key", 65))
 	s += "," + Num("catchup", StorageUtil.GetFloatValue(None, "shk.set.catchup", 3000.0))
 	s += "," + Num("level", StorageUtil.GetIntValue(None, "shk.set.level", 0))
 	s += "," + Num("levelpct", StorageUtil.GetFloatValue(None, "shk.set.levelpct", 90.0))
@@ -1491,6 +1486,18 @@ string Function BuildState(Actor focus)
 	s += "," + Num("scale", StorageUtil.GetFloatValue(None, "shk.set.scale", 100.0))
 	s += "," + Num("power", StorageUtil.GetIntValue(None, "shk.set.power", 1))
 	s += "," + Str("theme", StorageUtil.GetStringValue(None, "shk.set.theme", "vellum")) + "}"
+	return s
+EndFunction
+
+string Function BuildState(Actor focus)
+	string s = "{\"v\":1," + NumI("ack", menuAck)
+	if focus
+		s += "," + NumI("focus", focus.GetFormID())
+	else
+		s += ",\"focus\":0"
+	endif
+	s += ",\"max\":" + MaxSlots
+	s += "," + SettingsJson()
 
 	s += ",\"followers\":["
 	bool first = true
