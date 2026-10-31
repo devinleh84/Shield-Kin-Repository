@@ -34,7 +34,7 @@ SKSE, PapyrusUtil, powerofthree's Papyrus Extender, Magelight UI.
 | `Source/Scripts/` | Papyrus sources. `DialogueFollowerScript.psc` overrides the vanilla script so recruiting routes to Shield-Kin. |
 | `Magelight/ShieldKin/` | Menu page (HTML, CSS, JS). Installs to `Data/Magelight/ShieldKin/`. |
 | `esp/` | Record specs used to generate `Shield-Kin.esp` (quest, aliases, packages, dialogue). |
-| `tools/enable-shieldkin.ps1` | Enables the mod in the Authoria MO2 profile and disables Horde, marth Follower Overhaul and Harbinger. |
+| `tools/enable-shieldkin.ps1` | Enables the mod in the Authoria MO2 profile and disables Horde and marth Follower Overhaul (Harbinger stays on: an Authoria patcher needs APMF.esl). |
 
 ## Building
 
