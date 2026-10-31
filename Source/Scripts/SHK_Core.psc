@@ -84,6 +84,7 @@ Spell Property Healing Auto Hidden
 
 Actor Property PlayerRef Auto Hidden
 Spell Property MenuPower Auto Hidden
+Spell Property SellPower Auto Hidden
 
 ; ---------------------------------------------------------------------------
 ; Runtime state
@@ -143,6 +144,7 @@ EndFunction
 
 Function LoadForms()
 	MenuPower = Game.GetFormFromFile(0x822, PluginName) as Spell
+	SellPower = Game.GetFormFromFile(0x824, PluginName) as Spell
 	LinkHome = Game.GetFormFromFile(0x800, PluginName) as Keyword
 	LinkCamp = Game.GetFormFromFile(0x801, PluginName) as Keyword
 	LinkRelax = Game.GetFormFromFile(0x802, PluginName) as Keyword
@@ -201,14 +203,19 @@ EndEvent
 ; Re-apply settings the game does not keep in the save (base-form changes, linked refs).
 ; The "Shield-Kin" lesser power opens the menu; the Settings page can take it away.
 Function UpdatePower()
-	if !MenuPower
+	bool want = StorageUtil.GetIntValue(None, "shk.set.power", 1) == 1
+	GivePower(MenuPower, want)
+	GivePower(SellPower, want)
+EndFunction
+
+Function GivePower(Spell power, bool want)
+	if !power
 		return
 	endif
-	bool want = StorageUtil.GetIntValue(None, "shk.set.power", 1) == 1
-	if want && !PlayerRef.HasSpell(MenuPower)
-		PlayerRef.AddSpell(MenuPower, false)
-	elseif !want && PlayerRef.HasSpell(MenuPower)
-		PlayerRef.RemoveSpell(MenuPower)
+	if want && !PlayerRef.HasSpell(power)
+		PlayerRef.AddSpell(power, false)
+	elseif !want && PlayerRef.HasSpell(power)
+		PlayerRef.RemoveSpell(power)
 	endif
 EndFunction
 
@@ -861,14 +868,37 @@ EndFunction
 ; ---------------------------------------------------------------------------
 
 ; Opens the follower's inventory; what the player hands over is queued for sale.
-Function GiveItemsToSell(Actor a)
+Function GiveItemsToSell(Actor a, bool sellAfter = false)
 	int slot = FindSlot(a)
 	if slot < 0
 		return
 	endif
-	(SlotAlias(slot) as SHK_FollowerAlias).BeginCollecting()
+	(SlotAlias(slot) as SHK_FollowerAlias).BeginCollecting(sellAfter)
 	CloseMenu()
 	a.OpenInventory(true)
+EndFunction
+
+; The follower under the crosshair, else the nearest one within reach.
+Actor Function AimedOrNearestFollower()
+	Actor aimed = Game.GetCurrentCrosshairRef() as Actor
+	if aimed && FindSlot(aimed) >= 0
+		return aimed
+	endif
+	Actor best = None
+	float bestDist = 1500.0
+	int i = 0
+	while i < MaxSlots
+		Actor a = SlotActor(i)
+		if a && !a.IsDead() && a.Is3DLoaded()
+			float d = a.GetDistance(PlayerRef)
+			if d < bestDist
+				bestDist = d
+				best = a
+			endif
+		endif
+		i += 1
+	endwhile
+	return best
 EndFunction
 
 int Function SellQueueCount(Actor a)

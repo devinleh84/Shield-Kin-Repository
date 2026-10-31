@@ -3,6 +3,7 @@ Scriptname SHK_FollowerAlias extends ReferenceAlias
  sell errands and collecting items to sell.}
 
 bool collecting = false
+bool sellWhenDone = false
 
 SHK_Core Function Core()
 	return GetOwningQuest() as SHK_Core
@@ -173,8 +174,9 @@ EndEvent
 
 ; --- collecting items to sell -------------------------------------------------
 
-Function BeginCollecting()
+Function BeginCollecting(bool sellAfter = false)
 	collecting = true
+	sellWhenDone = sellAfter
 	RegisterForMenu("ContainerMenu")
 EndFunction
 
@@ -191,9 +193,13 @@ Event OnMenuClose(string menuName)
 	if collecting
 		collecting = false
 		int n = Core().SellQueueCount(a)
-		if n > 0
+		if sellWhenDone && n > 0
+			sellWhenDone = false
+			Core().StartSell(a)
+		elseif n > 0
 			Debug.Notification(a.GetDisplayName() + " is carrying " + n + " items to sell.")
 		endif
+		sellWhenDone = false
 	else
 		Core().WearGiven(a)
 	endif

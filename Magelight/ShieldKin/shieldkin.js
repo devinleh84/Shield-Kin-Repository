@@ -393,7 +393,7 @@
         stepper('levelpct', st.levelpct, 5, 50, 100, function (v) { return v + '%'; }));
     }
     h += row('Automatic outfits', 'Default for new followers: change saved outfits by place.', toggle('autooutfit', st.autooutfit));
-    h += row('Lesser power', 'Gives you the "Shield-Kin" power, which opens this menu. Aim at a follower to open their page.',
+    h += row('Lesser powers', 'Gives you two powers: "Shield-Kin" opens this menu, "Shield-Kin: Sell" hands items to a follower to sell.',
       toggle('power', st.power !== 0));
     h += row('Notifications', 'Short messages in the corner of the screen.', toggle('notify', st.notify));
     h += row('Menu size', 'Scale of this window.',
