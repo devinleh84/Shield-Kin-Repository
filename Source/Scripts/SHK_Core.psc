@@ -984,13 +984,13 @@ Function StartSell(Actor a)
 		Notify(a.GetDisplayName() + " has nothing to sell. Give them items first.")
 		return
 	endif
-	Actor merchant = FindMerchantNear(a)
-	if !merchant
-		Notify("No merchant nearby for " + a.GetDisplayName() + " to sell to.")
-		return
-	endif
 	int before = StorageUtil.GetIntValue(a, "shk.mode", ModeFollow)
 	if before == ModeSell
+		return
+	endif
+	Actor merchant = FindMerchantNear(a)
+	if !merchant
+		StartSellTrip(a, before)
 		return
 	endif
 	StorageUtil.SetIntValue(a, "shk.sell.prevmode", before)
@@ -1000,9 +1000,88 @@ Function StartSell(Actor a)
 	Notify(a.GetDisplayName() + " heads to " + merchant.GetDisplayName() + " to sell.")
 EndFunction
 
+; No merchant nearby: the follower leaves for the nearest town and comes back an
+; in-game hour later with the gold, at the same price as a sale in person.
+Function StartSellTrip(Actor a, int before)
+	StorageUtil.SetIntValue(a, "shk.sell.prevmode", before)
+	StorageUtil.UnsetFormValue(a, "shk.sell.merchant")
+	StorageUtil.SetIntValue(a, "shk.sell.trip", 1)
+	StorageUtil.SetFloatValue(a, "shk.sell.back", Utility.GetCurrentGameTime() + 1.0 / 24.0)
+	StorageUtil.SetIntValue(a, "shk.mode", ModeSell)
+	a.SetFactionRank(ModeFaction, ModeSell)
+	Notify(a.GetDisplayName() + " heads off to the nearest town to sell. Back in about an hour.")
+	a.Disable(true)
+EndFunction
+
+bool Function IsOnSellTrip(Actor a)
+	return StorageUtil.GetIntValue(a, "shk.sell.trip", 0) == 1
+EndFunction
+
+bool Function SellTripDue(Actor a)
+	return Utility.GetCurrentGameTime() >= StorageUtil.GetFloatValue(a, "shk.sell.back", 0.0)
+EndFunction
+
+; Brings a follower back from a selling trip: beside the player if they were following,
+; otherwise where they left from.
+Function EndSellTrip(Actor a)
+	StorageUtil.UnsetIntValue(a, "shk.sell.trip")
+	StorageUtil.UnsetFloatValue(a, "shk.sell.back")
+	if StorageUtil.GetIntValue(a, "shk.sell.prevmode", ModeFollow) == ModeFollow
+		float az = PlayerRef.GetAngleZ()
+		a.MoveTo(PlayerRef, -120.0 * Math.Sin(az), -120.0 * Math.Cos(az), 0.0, false)
+	endif
+	a.Enable(true)
+EndFunction
+
+Function FinishSellTrip(Actor a)
+	float mult = SellMult(a)
+	int earned = 0
+	int sold = 0
+	int i = StorageUtil.FormListCount(a, "shk.sell.items") - 1
+	while i >= 0
+		Form item = StorageUtil.FormListGet(a, "shk.sell.items", i)
+		int want = StorageUtil.IntListGet(a, "shk.sell.counts", i)
+		if item
+			int have = a.GetItemCount(item)
+			if want > have
+				want = have
+			endif
+			if want > 0
+				int each = (item.GetGoldValue() * mult) as int
+				if each < 1
+					each = 1
+				endif
+				a.RemoveItem(item, want, true)
+				earned += want * each
+				sold += want
+			endif
+		endif
+		i -= 1
+	endwhile
+	StorageUtil.FormListClear(a, "shk.sell.items")
+	StorageUtil.IntListClear(a, "shk.sell.counts")
+	if earned > 0
+		PlayerRef.AddItem(Gold, earned, true)
+	endif
+	EndSellTrip(a)
+	Debug.Notification(a.GetDisplayName() + " is back from town. Sold " + sold + " items for " + earned + " gold.")
+	CancelSell(a, false)
+EndFunction
+
+float Function SellMult(Actor a)
+	float speech = a.GetActorValue("Speechcraft")
+	if speech > 100.0
+		speech = 100.0
+	endif
+	return 0.25 + 0.15 * (speech / 100.0)
+EndFunction
+
 Function CancelSell(Actor a, bool notifyPlayer = true)
 	if StorageUtil.GetIntValue(a, "shk.mode", ModeFollow) != ModeSell
 		return
+	endif
+	if IsOnSellTrip(a)
+		EndSellTrip(a)
 	endif
 	int prev = StorageUtil.GetIntValue(a, "shk.sell.prevmode", ModeFollow)
 	StorageUtil.UnsetFormValue(a, "shk.sell.merchant")
@@ -1034,11 +1113,7 @@ Function CompleteSale(Actor a)
 		purse = merchant.GetItemCount(Gold)
 	endif
 
-	float speech = a.GetActorValue("Speechcraft")
-	if speech > 100.0
-		speech = 100.0
-	endif
-	float mult = 0.25 + 0.15 * (speech / 100.0)
+	float mult = SellMult(a)
 
 	int earned = 0
 	int sold = 0
@@ -1500,6 +1575,8 @@ string Function FollowerJson(Actor a)
 	Actor m = StorageUtil.GetFormValue(a, "shk.sell.merchant") as Actor
 	if m
 		s += "," + Str("merchant", m.GetDisplayName())
+	elseif IsOnSellTrip(a)
+		s += "," + Str("merchant", "the nearest town")
 	endif
 	s += "," + Num("bonus", StorageUtil.GetIntValue(a, "shk.lvl.bonus", 0))
 	s += "}"

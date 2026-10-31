@@ -121,6 +121,12 @@ EndFunction
 
 ; Walk to the merchant; finish when close, or move them there after 90 seconds.
 Function TickSell(SHK_Core core, Actor a)
+	if core.IsOnSellTrip(a)
+		if core.SellTripDue(a)
+			core.FinishSellTrip(a)
+		endif
+		return
+	endif
 	Actor merchant = StorageUtil.GetFormValue(a, "shk.sell.merchant") as Actor
 	if !merchant || merchant.IsDead()
 		core.CancelSell(a, true)
